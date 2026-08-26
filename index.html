@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Agenda Auditório - Eletromidia</title>
+    <title>Portal de Agendamento - Eletromidia Auditório</title>
     <!-- Tailwind CSS CDN -->
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
@@ -21,7 +21,8 @@
                             cardBorder: '#222228',   // Borda sutil
                             co: '#EC4899',           // Rosa C.O.
                             av: '#06B6D4',           // Cyan TI/AV
-                            google: '#4285F4'
+                            google: '#4285F4',
+                            slack: '#4A154B'
                         }
                     }
                 }
@@ -30,6 +31,10 @@
     </script>
     <!-- Lucide Icons -->
     <script src="https://unpkg.com/lucide@latest"></script>
+    <!-- Supabase Client for Cloud Backend -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <!-- EmailJS Client for Email Confirmation -->
+    <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@3/dist/email.min.js"></script>
     <link rel="stylesheet" href="styles.css">
 </head>
 <body class="bg-black text-zinc-100 min-h-screen flex flex-col font-sans selection:bg-orange-500 selection:text-black">
@@ -54,8 +59,7 @@
                 </a>
                 <div class="hidden sm:block h-6 w-px bg-zinc-800"></div>
                 <div class="hidden sm:block">
-                    <h1 class="font-bold text-sm text-zinc-200 leading-tight">Agenda Auditório</h1>
-                    <p class="text-[11px] text-orange-500 font-semibold">Portal de Agendamento</p>
+                    <p class="text-sm font-bold text-orange-500 tracking-wide">Portal de Agendamento</p>
                 </div>
             </div>
 
@@ -76,12 +80,18 @@
                     <span>Fichas Técnicas (C.O. & AV)</span>
                 </button>
                 <button onclick="handleRestrictedTab('google-settings')" id="nav-google-settings" class="hidden px-4 py-2 rounded-lg text-sm font-semibold text-zinc-400 hover:text-white hover:bg-zinc-900 transition-all flex items-center space-x-2">
-                    <i data-lucide="share-2" class="w-4 h-4 text-blue-400"></i>
-                    <span>Google Agenda</span>
+                    <i data-lucide="settings" class="w-4 h-4 text-blue-400"></i>
+                    <span>Integrações & Nuvem</span>
                 </button>
             </nav>
 
             <div class="flex items-center space-x-3">
+                <!-- Status do Cloud Backend -->
+                <div id="cloud-status-indicator" class="hidden md:flex items-center space-x-1.5 px-2.5 py-1 rounded-full text-[10px] font-bold bg-emerald-500/10 text-emerald-400 border border-emerald-500/20" title="Sincronizado na Nuvem">
+                    <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+                    <span>Nuvem Ativa</span>
+                </div>
+
                 <!-- Botão de Reserva Rápida -->
                 <button onclick="openNewEventModal()" class="bg-gradient-to-r from-orange-600 to-amber-500 hover:from-orange-500 hover:to-amber-400 text-black font-black px-4 py-2 rounded-lg text-sm shadow-lg shadow-orange-600/20 transition-all flex items-center space-x-2 active:scale-95">
                     <i data-lucide="plus" class="w-4 h-4 stroke-[3]"></i>
@@ -170,6 +180,15 @@
                     <span class="text-xs font-bold px-3 py-1 rounded-full bg-orange-500/10 text-orange-400 border border-orange-500/30">Formulário Oficial</span>
                 </div>
 
+                <!-- Banner de Alerta de Conflito de Horário -->
+                <div id="conflict-alert-banner" class="hidden mb-6 p-4 rounded-2xl bg-red-950/80 border border-red-500/50 text-red-200 text-xs space-y-1 animate-bounce">
+                    <div class="flex items-center space-x-2 font-black text-red-400 text-sm">
+                        <i data-lucide="alert-triangle" class="w-5 h-5 text-red-500"></i>
+                        <span>Atenção: Conflito de Horário Detectado!</span>
+                    </div>
+                    <p id="conflict-alert-message" class="text-zinc-300 pl-7">Já existe uma reserva confirmada para este horário.</p>
+                </div>
+
                 <!-- Form Steps Indicator -->
                 <div class="grid grid-cols-4 gap-2 mb-8 text-center text-xs font-bold">
                     <div id="step-indicator-1" class="py-2.5 px-1 border-b-2 border-orange-500 text-orange-400">1. Dados do Evento</div>
@@ -224,17 +243,17 @@
 
                             <div>
                                 <label class="block text-xs font-bold text-zinc-300 mb-1">Data do Evento *</label>
-                                <input type="date" id="event_date" class="w-full bg-black border border-zinc-800 text-sm rounded-xl px-3.5 py-2.5 text-white focus:border-orange-500 focus:outline-none transition-colors">
+                                <input type="date" id="event_date" onchange="checkTimeConflictRealtime()" class="w-full bg-black border border-zinc-800 text-sm rounded-xl px-3.5 py-2.5 text-white focus:border-orange-500 focus:outline-none transition-colors">
                             </div>
 
                             <div>
                                 <label class="block text-xs font-bold text-zinc-300 mb-1">Horário de Início *</label>
-                                <input type="time" id="start_time" class="w-full bg-black border border-zinc-800 text-sm rounded-xl px-3.5 py-2.5 text-white focus:border-orange-500 focus:outline-none transition-colors">
+                                <input type="time" id="start_time" onchange="checkTimeConflictRealtime()" class="w-full bg-black border border-zinc-800 text-sm rounded-xl px-3.5 py-2.5 text-white focus:border-orange-500 focus:outline-none transition-colors">
                             </div>
 
                             <div>
                                 <label class="block text-xs font-bold text-zinc-300 mb-1">Horário de Término *</label>
-                                <input type="time" id="end_time" class="w-full bg-black border border-zinc-800 text-sm rounded-xl px-3.5 py-2.5 text-white focus:border-orange-500 focus:outline-none transition-colors">
+                                <input type="time" id="end_time" onchange="checkTimeConflictRealtime()" class="w-full bg-black border border-zinc-800 text-sm rounded-xl px-3.5 py-2.5 text-white focus:border-orange-500 focus:outline-none transition-colors">
                             </div>
 
                             <div>
@@ -515,15 +534,15 @@
                             </div>
                         </div>
 
-                        <!-- Sync with Google Calendar Banner -->
+                        <!-- Confirmation Banner -->
                         <div class="bg-gradient-to-r from-orange-950/40 via-amber-950/40 to-zinc-900 border border-orange-500/30 p-4 rounded-2xl flex items-center justify-between">
                             <div class="flex items-center space-x-3">
                                 <div class="bg-orange-600 p-2.5 rounded-xl text-black font-black shadow-lg">
-                                    <i data-lucide="calendar-plus" class="w-5 h-5"></i>
+                                    <i data-lucide="check-circle-2" class="w-5 h-5"></i>
                                 </div>
                                 <div>
-                                    <h4 class="text-xs font-bold text-orange-400">Sincronização com Google Agenda Pronta</h4>
-                                    <p class="text-[11px] text-zinc-400">Após concluir, você poderá adicionar o agendamento ao Google Agenda com 1-clique.</p>
+                                    <h4 class="text-xs font-bold text-orange-400">Solicitação Pronta para Envio</h4>
+                                    <p class="text-[11px] text-zinc-400">Sua reserva será gravada no calendário oficial e as equipes do Slack, E-mail e C.O. serão notificadas.</p>
                                 </div>
                             </div>
                         </div>
@@ -531,8 +550,8 @@
                         <div class="flex justify-between pt-4">
                             <button type="button" onclick="goToStep(3)" class="bg-zinc-800 text-zinc-300 font-bold px-6 py-2.5 rounded-xl text-sm hover:bg-zinc-700 transition-colors">&larr; Voltar</button>
                             <button type="submit" class="bg-gradient-to-r from-orange-600 via-amber-500 to-orange-500 hover:from-orange-500 hover:to-amber-400 text-black font-black px-8 py-3 rounded-xl text-sm shadow-xl shadow-orange-600/30 transform transition active:scale-95 flex items-center space-x-2">
-                                <i data-lucide="check-circle" class="w-4 h-4 stroke-[3]"></i>
-                                <span>Concluir Agendamento</span>
+                                <i data-lucide="send" class="w-4 h-4 stroke-[3]"></i>
+                                <span>Enviar Solicitação de Reserva</span>
                             </button>
                         </div>
                     </div>
@@ -566,40 +585,95 @@
             </div>
         </section>
 
-        <!-- TAB 4: CONFIGURAÇÃO DO GOOGLE AGENDA (ÁREA RESTRITA) -->
+        <!-- TAB 4: CONFIGURAÇÕES, SLACK, EMAILJS & NUVEM (ÁREA RESTRITA) -->
         <section id="tab-google-settings" class="hidden space-y-6">
-            <div class="bg-zinc-950 border border-zinc-800/80 rounded-2xl p-6 sm:p-8 max-w-3xl mx-auto space-y-6 shadow-2xl">
+            <div class="bg-zinc-950 border border-zinc-800/80 rounded-2xl p-6 sm:p-8 max-w-4xl mx-auto space-y-6 shadow-2xl">
                 <div class="border-b border-zinc-800 pb-4">
                     <div class="flex items-center space-x-2 mb-1">
-                        <span class="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-blue-500/10 text-blue-400 border border-blue-500/20">Área de Administração</span>
+                        <span class="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-blue-500/10 text-blue-400 border border-blue-500/20">Área de Administração Avançada</span>
                     </div>
                     <h2 class="text-xl font-extrabold text-white flex items-center space-x-2">
-                        <i data-lucide="share-2" class="w-5 h-5 text-orange-500"></i>
-                        <span>Integração com Google Agenda</span>
+                        <i data-lucide="settings" class="w-5 h-5 text-orange-500"></i>
+                        <span>Integrações (Slack, E-mail, Google & Nuvem)</span>
                     </h2>
-                    <p class="text-xs text-zinc-400 mt-1">Conecte o sistema do auditório à agenda corporativa oficial da Eletromidia.</p>
+                    <p class="text-xs text-zinc-400 mt-1">Configure o bot de notificação do Slack, backend em nuvem e disparo de e-mails de confirmação.</p>
                 </div>
 
-                <!-- Feature 1: Botão Direto -->
-                <div class="bg-black p-5 rounded-2xl border border-zinc-800 space-y-2">
-                    <div class="flex items-center space-x-2 text-orange-500 font-bold text-sm">
-                        <i data-lucide="link" class="w-4 h-4"></i>
-                        <span>1. Link Direto & Botão "Adicionar ao Google Agenda"</span>
+                <!-- Feature 1: Slack Webhook Integration -->
+                <div class="bg-black p-5 rounded-2xl border border-purple-900/50 space-y-3">
+                    <div class="flex items-center space-x-2 text-purple-400 font-bold text-sm">
+                        <i data-lucide="message-square" class="w-4 h-4"></i>
+                        <span>1. Bot de Notificação no Canal do Slack (Equipe Audiovisual)</span>
                     </div>
                     <p class="text-xs text-zinc-300 leading-relaxed">
-                        Qualquer agendamento realizado no sistema gera instantaneamente um botão personalizado que abre a tela de criação do Google Agenda do usuário com todos os campos (título, horário, sala e ficha técnica) preenchidos automaticamente.
+                        Notifique o canal do Slack da equipe de audiovisual instantaneamente sempre que um novo agendamento for criado. Insira o URL do <strong>Incoming Webhook</strong> do Slack.
                     </p>
-                    <span class="inline-block px-2.5 py-1 rounded-md bg-emerald-500/10 text-emerald-400 text-[10px] font-bold border border-emerald-500/20">Status: Ativo e Funcional</span>
+                    <div class="space-y-2">
+                        <label class="block text-xs font-bold text-zinc-400">Slack Webhook URL</label>
+                        <div class="flex items-center space-x-2">
+                            <input type="url" id="slack_webhook_url" placeholder="https://hooks.slack.com/services/T00000000/B00000000/XXXXXXXXXXXXXXXXXXXXXXXX" class="flex-1 bg-zinc-900 border border-zinc-800 text-xs rounded-xl px-3.5 py-2.5 text-white focus:border-purple-500 focus:outline-none">
+                            <button onclick="testSlackNotification()" class="bg-purple-950 hover:bg-purple-900 text-purple-300 border border-purple-700/50 text-xs px-4 py-2.5 rounded-xl font-bold transition-all">Testar Slack</button>
+                        </div>
+                    </div>
                 </div>
 
-                <!-- Feature 2: Feed iCal / Subscrição -->
-                <div class="bg-black p-5 rounded-2xl border border-zinc-800 space-y-2">
+                <!-- Feature 2: Email Confirmation via EmailJS -->
+                <div class="bg-black p-5 rounded-2xl border border-amber-900/50 space-y-3">
                     <div class="flex items-center space-x-2 text-amber-400 font-bold text-sm">
-                        <i data-lucide="rss" class="w-4 h-4"></i>
-                        <span>2. Feed de Assinatura iCal / .ics</span>
+                        <i data-lucide="mail" class="w-4 h-4"></i>
+                        <span>2. Disparo Automático de E-mail de Confirmação (EmailJS)</span>
                     </div>
                     <p class="text-xs text-zinc-300 leading-relaxed">
-                        Permite que os operadores do C.O. e TI assinem a agenda do auditório no Google Agenda pelo link WebCal, sincronizando todos os compromissos em tempo real.
+                        Envia um e-mail de confirmação em HTML diretamente para o e-mail do solicitante. Insira as chaves da sua conta no <a href="https://www.emailjs.com" target="_blank" class="text-amber-400 underline">EmailJS</a> (Gratuito).
+                    </p>
+                    <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                        <div>
+                            <label class="block text-xs font-bold text-zinc-400 mb-1">Public Key / User ID</label>
+                            <input type="text" id="emailjs_public_key" placeholder="user_xxxxxxxxx" class="w-full bg-zinc-900 border border-zinc-800 text-xs rounded-xl px-3.5 py-2 text-white focus:border-amber-500 focus:outline-none">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-bold text-zinc-400 mb-1">Service ID</label>
+                            <input type="text" id="emailjs_service_id" placeholder="service_xxxxxx" class="w-full bg-zinc-900 border border-zinc-800 text-xs rounded-xl px-3.5 py-2 text-white focus:border-amber-500 focus:outline-none">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-bold text-zinc-400 mb-1">Template ID</label>
+                            <input type="text" id="emailjs_template_id" placeholder="template_xxxxxx" class="w-full bg-zinc-900 border border-zinc-800 text-xs rounded-xl px-3.5 py-2 text-white focus:border-amber-500 focus:outline-none">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Feature 3: Backend em Nuvem (Supabase / Cloud Persistence) -->
+                <div class="bg-black p-5 rounded-2xl border border-emerald-900/50 space-y-3">
+                    <div class="flex items-center justify-between">
+                        <div class="flex items-center space-x-2 text-emerald-400 font-bold text-sm">
+                            <i data-lucide="cloud" class="w-4 h-4"></i>
+                            <span>3. Backend em Nuvem Integrado (Supabase / Sync em Tempo Real)</span>
+                        </div>
+                    </div>
+                    <p class="text-xs text-zinc-300 leading-relaxed">
+                        Sincronize os agendamentos entre todos os computadores dos colaboradores em tempo real. Crie um projeto gratuito no <a href="https://supabase.com" target="_blank" class="text-emerald-400 underline">Supabase</a> e insira as credenciais abaixo.
+                    </p>
+
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+                        <div>
+                            <label class="block text-xs font-bold text-zinc-400 mb-1">Supabase Project URL</label>
+                            <input type="url" id="supabase_url" placeholder="https://xxxx.supabase.co" class="w-full bg-zinc-900 border border-zinc-800 text-xs rounded-xl px-3.5 py-2 text-white focus:border-emerald-500 focus:outline-none">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-bold text-zinc-400 mb-1">Supabase Anon Key</label>
+                            <input type="text" id="supabase_key" placeholder="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..." class="w-full bg-zinc-900 border border-zinc-800 text-xs rounded-xl px-3.5 py-2 text-white focus:border-emerald-500 focus:outline-none">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Feature 4: Feed iCal Google Agenda -->
+                <div class="bg-black p-5 rounded-2xl border border-zinc-800 space-y-2">
+                    <div class="flex items-center space-x-2 text-blue-400 font-bold text-sm">
+                        <i data-lucide="rss" class="w-4 h-4"></i>
+                        <span>4. Feed iCal WebCal para Google Agenda</span>
+                    </div>
+                    <p class="text-xs text-zinc-300 leading-relaxed">
+                        Copie este link para assinar o calendário do auditório diretamente no Google Agenda da equipe.
                     </p>
                     <div class="flex items-center space-x-2 pt-1">
                         <input type="text" readonly value="webcal://eletromidia.com.br/api/auditorio/ical.ics" class="flex-1 bg-zinc-900 border border-zinc-800 text-xs px-3.5 py-2 rounded-xl text-zinc-400">
@@ -607,32 +681,10 @@
                     </div>
                 </div>
 
-                <!-- Feature 3: Configuração da API Oficial -->
-                <div class="bg-black p-5 rounded-2xl border border-zinc-800 space-y-4">
-                    <div class="flex items-center justify-between">
-                        <div class="flex items-center space-x-2 text-pink-400 font-bold text-sm">
-                            <i data-lucide="key" class="w-4 h-4"></i>
-                            <span>3. Sincronização Automática via Google Calendar API (OAuth2)</span>
-                        </div>
-                    </div>
-                    <p class="text-xs text-zinc-300 leading-relaxed">
-                        Para sincronizar eventos diretamente com a conta institucional (ex: <code class="bg-zinc-900 px-1.5 py-0.5 rounded text-orange-400 font-mono">auditorio@eletromidia.com.br</code>) sem interação manual do usuário, insira as credenciais do projeto Google Cloud.
-                    </p>
-
-                    <div class="grid grid-cols-1 gap-3">
-                        <div>
-                            <label class="block text-xs font-bold text-zinc-400 mb-1">Google Client ID / OAuth Client</label>
-                            <input type="text" id="gcal_client_id" placeholder="1234567890-xxx.apps.googleusercontent.com" class="w-full bg-zinc-900 border border-zinc-800 text-xs rounded-xl px-3.5 py-2 text-white focus:border-orange-500 focus:outline-none">
-                        </div>
-                        <div>
-                            <label class="block text-xs font-bold text-zinc-400 mb-1">ID da Agenda de Destino (Calendar ID)</label>
-                            <input type="text" id="gcal_calendar_id" placeholder="auditorio.sp@eletromidia.com.br" class="w-full bg-zinc-900 border border-zinc-800 text-xs rounded-xl px-3.5 py-2 text-white focus:border-orange-500 focus:outline-none">
-                        </div>
-                    </div>
-
-                    <div class="pt-2 flex justify-end">
-                        <button onclick="saveGoogleConfig()" class="bg-gradient-to-r from-orange-600 to-amber-500 hover:from-orange-500 hover:to-amber-400 text-black font-black text-xs px-5 py-2.5 rounded-xl shadow-md">Salvar Configurações API</button>
-                    </div>
+                <div class="pt-2 flex justify-end">
+                    <button onclick="saveAllIntegrationsConfig()" class="bg-gradient-to-r from-orange-600 to-amber-500 hover:from-orange-500 hover:to-amber-400 text-black font-black text-xs px-6 py-3 rounded-xl shadow-lg transition-all transform active:scale-95">
+                        Salvar Todas as Configurações
+                    </button>
                 </div>
             </div>
         </section>
@@ -673,7 +725,7 @@
         </div>
     </div>
 
-    <!-- Modal: Detalhes do Evento & Ficha Técnica -->
+    <!-- Modal: Detalhes do Evento (Diferenciado para Colaboradores vs Operador) -->
     <div id="event-modal" class="hidden fixed inset-0 z-50 bg-black/85 backdrop-blur-md flex items-center justify-center p-4">
         <div class="bg-zinc-950 border border-zinc-800/80 rounded-2xl max-w-3xl w-full max-h-[90vh] overflow-y-auto p-6 sm:p-8 shadow-2xl relative">
             <button onclick="closeEventModal()" class="absolute right-4 top-4 p-2 rounded-xl text-zinc-400 hover:text-white hover:bg-zinc-900 transition-colors">

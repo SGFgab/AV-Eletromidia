@@ -9,6 +9,7 @@ Sistema completo e responsivo para gestão, solicitação e operação do audit�
 ### 👥 1. Visão do Colaborador (Pública)
 - **Calendário do Auditório**: Visualização em lista de cards e em **Grid Mensal**.
 - **Filtros Rápidos**: Filtragem por eventos com mídia C.O., clientes específicos e compromissos do dia.
+- **Detecção de Conflito de Horário**: Alerta automático em tempo real caso já exista uma reserva no mesmo dia e intervalo de horário, evitando reservas sobrepostas.
 - **Resumo de Eventos**: Consulta limpa com informações básicas (Título, Solicitante, Departamento, Data e Horário) sem expor links internos ou especificações do C.O.
 - **Formulário Passo a Passo de Reserva**:
   1. **Dados Gerais**: Título, solicitante, e-mail, departamento, data, horário e buffer de setup.
@@ -26,41 +27,89 @@ Acesso exclusivo através do botão **Área do Operador** no topo do site.
   - **Senha:** `ELT@Estudio`
 
 #### Recursos Exclusivos do Operador:
+- **Bot de Notificação no Slack (Audiovisual)**: Disparo automático de cards no canal do Slack da equipe de audiovisual com detalhes de novas reservas.
+- **Confirmação por E-mail (EmailJS)**: Disparo de e-mail automático para o solicitante com o comprovante de agendamento.
+- **Backend em Nuvem (Supabase)**: Sincronização em tempo real entre todos os computadores.
 - **Google Agenda Sync**: Botão **+ Google Agenda** em cada evento para sincronização instantânea de título, horário, local e ficha técnica no Google Agenda institucional.
 - **Exportação iCal (`.ics`)**: Download de arquivos `.ics` para importar em qualquer cliente de calendário.
 - **Aba Fichas Técnicas (C.O. & AV)**: Visão detalhada de todas as especificações técnicas de cada evento com opção de **Imprimir Ficha/Relatório em PDF**.
-- **Aba Google Agenda API**: Configuração do feed iCal WebCal e chaves de integração via OAuth2.
 - **Gestão de Reservas**: Opção para cancelar/excluir agendamentos ativos.
 
 ---
 
-## 🛠️ Tecnologias Utilizadas
+## 💬 Como Configurar o Bot de Notificações no Slack
 
-- **HTML5 Semantic**: Estrutura acessível e otimizada.
-- **Tailwind CSS (via CDN)**: Estilização moderna no padrão de cores da Eletromidia (Preto `#000000` & Laranja `#FF5500`).
-- **JavaScript Vanilla (ES6+)**: Lógica de interface, manipulação de estado e normalização de dados sem dependência de frameworks complexos.
-- **Lucide Icons**: Biblioteca leve e elegante de ícones vetoriais.
-- **LocalStorage**: Persistência de agendamentos diretamente no navegador.
+Para que o canal do Slack da equipe de audiovisual receba mensagens automáticas a cada novo agendamento:
+
+1. Acesse o portal de apps do Slack: [api.slack.com/apps](https://api.slack.com/apps).
+2. Clique em **Create New App** -> Selecione **From scratch**.
+3. Dê um nome para o app (ex: `Robô Auditório Eletromidia`) e selecione o workspace da **Eletromidia**.
+4. No menu lateral, clique em **Incoming Webhooks** e ative a chave para **On**.
+5. Clique no botão **Add New Webhook to Workspace** no final da página.
+6. Escolha o **canal da equipe de audiovisual** e clique em **Allow** (Permitir).
+7. Copie o **Webhook URL** gerado (parece com: `https://hooks.slack.com/services/T.../B.../...`).
+8. No site do Auditório, faça login na **Área do Operador**, acesse a aba **Integrações & Nuvem**, cole a URL no campo **Slack Webhook URL** e clique em **Salvar Todas as Configurações** (você pode clicar no botão **Testar Slack** para verificar o envio da mensagem).
 
 ---
 
-## 📁 Estrutura de Arquivos
+## ☁️ Como Configurar o Banco de Dados em Nuvem (Supabase)
 
+1. Crie uma conta gratuita no [supabase.com](https://supabase.com) e crie um novo projeto.
+2. No **SQL Editor** do Supabase, execute o seguinte comando para criar a tabela:
+```sql
+create table auditorio_events (
+  id text primary key,
+  title text,
+  "applicantName" text,
+  "applicantEmail" text,
+  "applicantPhone" text,
+  department text,
+  date text,
+  "startTime" text,
+  "endTime" text,
+  "setupBuffer" text,
+  "eventType" text,
+  "hasSpecificClient" boolean,
+  "clientName" text,
+  "hasCOMedia" boolean,
+  "coMediaType" text,
+  "coMediaFormat" text,
+  "coMediaUrl" text,
+  "coTestNeeded" text,
+  "coTestDatetime" text,
+  "coInstructions" text,
+  "numPresentations" int,
+  "presentationFormat" text,
+  "presentationDevice" text,
+  "numPresenters" int,
+  "micsHandheld" int,
+  "micsLapel" int,
+  "micsAudience" int,
+  "stageLayout" text,
+  "streamingType" text,
+  "needPassador" boolean,
+  "needStageMonitor" boolean,
+  "needTISupport" boolean,
+  "numAttendees" int,
+  "numExternalGuests" int,
+  "hasCatering" text,
+  "cateringTime" text,
+  "logisticsNotes" text
+);
+
+-- Habilitar leitura e escrita pública/anônima
+alter table auditorio_events enable row level security;
+create policy "Allow all access" on auditorio_events for all using (true) with check (true);
 ```
-/
-├── index.html        # Estrutura principal da página, navegação, abas e modais
-├── styles.css        # Animações personalizadas e estilização complementar
-├── app.js            # Lógica de controle, estado, validação e sincronização
-├── logo.png          # Logo institucional da Eletromidia (opcional / fallback SVG)
-└── README.md         # Documentação completa do projeto
-```
+3. Em **Project Settings** -> **API**, copie o **Project URL** e a **Anon Key**.
+4. Cole esses valores na aba **Integrações & Nuvem** da Área do Operador no site e clique em **Salvar**.
 
 ---
 
 ## 💻 Como Executar Localmente
 
 1. Baixe ou clone o repositório em sua máquina.
-2. Abra o arquivo `index.html` diretamente em qualquer navegador moderno (Chrome, Edge, Firefox, Safari) ou utilize a extensão **Live Server** do VS Code.
+2. Abra o arquivo `index.html` diretamente em qualquer navegador moderno (Chrome, Edge, Firefox, Safari).
 
 ---
 
@@ -69,27 +118,12 @@ Acesso exclusivo através do botão **Área do Operador** no topo do site.
 1. Inicialize o Git e envie os arquivos para o seu repositório:
    ```bash
    git add .
-   git commit -m "Versao final do Portal de Agendamento do Auditorio Eletromidia"
+   git commit -m "Versao final com Slack, Conflito de Horario e Nuvem"
    git push origin main
    ```
 2. No GitHub, acesse seu repositório -> **Settings** -> **Pages**.
 3. Em **Source**, selecione a branch `main` e a pasta `/ (root)`.
-4. Clique em **Save**. O site estará no ar gratuitamente em alguns minutos!
-
----
-
-## 💡 Sugestões de Melhorias Futuras
-
-Caso queira expandir o sistema no futuro, aqui estão algumas recomendações valiosas:
-
-1. **Notificações via e-mail / Webhook**:
-   - Integrar um webhook do **Microsoft Teams** ou **Slack** para que o canal do C.O. receba uma mensagem automática sempre que uma nova reserva for solicitada.
-2. **Validação Automática de Conflito de Horário**:
-   - Bloquear automaticamente o formulário de reserva caso já exista um evento confirmado no mesmo dia e intervalo de horário.
-3. **Backend com Banco de Dados (Node.js / Firebase / Supabase)**:
-   - Migrar do LocalStorage para um banco de dados em nuvem, permitindo que colaboradores em diferentes computadores vejam as atualizações em tempo real.
-4. **Envio Automático de Convite por E-mail**:
-   - Disparo automático de e-mail de confirmação em HTML para o solicitante com o resumo da reserva e um anexo `.ics`.
+4. Clique em **Save**.
 
 ---
 
