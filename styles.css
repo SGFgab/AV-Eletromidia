@@ -1,0 +1,53 @@
+/* Custom styles for Eletromidia Auditorium Booking System - Black & Orange Theme */
+
+/* Custom Scrollbar */
+::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+}
+
+::-webkit-scrollbar-track {
+    background: #000000;
+}
+
+::-webkit-scrollbar-thumb {
+    background: #27272a;
+    border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background: #FF5500;
+}
+
+/* Print Styles for Ficha Técnica */
+@media print {
+    body {
+        background-color: #ffffff !important;
+        color: #000000 !important;
+    }
+
+    header, nav, button, #toast, #tab-calendar, #tab-new-event, #tab-google-settings {
+        display: none !important;
+    }
+
+    #tab-fichas {
+        display: block !important;
+    }
+
+    .bg-zinc-950, .bg-zinc-900, .bg-black {
+        background-color: #ffffff !important;
+        color: #000000 !important;
+        border-color: #cccccc !important;
+    }
+
+    .text-white, .text-zinc-100, .text-zinc-300, .text-zinc-400 {
+        color: #000000 !important;
+    }
+
+    .ficha-card {
+        page-break-inside: avoid;
+        border: 2px solid #333333 !important;
+        margin-bottom: 2rem !important;
+        padding: 1.5rem !important;
+    }
+}

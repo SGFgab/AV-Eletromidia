@@ -1,0 +1,700 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Agenda Auditório - Eletromidia</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        brand: {
+                            orange: '#FF5500',      // Laranja Oficial Eletromidia
+                            orangeHover: '#FF6A13',
+                            orangeLight: '#FF8833',
+                            black: '#000000',        // Preto Profundo
+                            dark: '#0A0A0C',         // Background Dark
+                            card: '#121215',         // Card Dark Background
+                            cardBorder: '#222228',   // Borda sutil
+                            co: '#EC4899',           // Rosa C.O.
+                            av: '#06B6D4',           // Cyan TI/AV
+                            google: '#4285F4'
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body class="bg-black text-zinc-100 min-h-screen flex flex-col font-sans selection:bg-orange-500 selection:text-black">
+
+    <!-- Header / Navbar -->
+    <header class="bg-zinc-950 border-b border-zinc-800/80 sticky top-0 z-40 shadow-2xl">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+            
+            <!-- Logo Eletromidia + Subtítulo -->
+            <div class="flex items-center space-x-4">
+                <a href="#" onclick="switchTab('calendar')" id="logo-container" class="flex items-center space-x-2 group">
+                    <!-- Default SVG logo -->
+                    <svg id="default-logo-svg" class="h-7 w-auto transition-transform group-hover:scale-105" viewBox="0 0 280 40" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <rect x="0" y="4" width="32" height="32" rx="8" fill="#FF5500" />
+                        <path d="M10 12H22V16H10V12ZM10 18H18V22H10V18ZM10 24H22V28H10V24Z" fill="#000000" />
+                        <text x="42" y="28" font-family="system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-weight="900" font-size="24" letter-spacing="-0.5">
+                            <tspan fill="#FFFFFF">eletro</tspan><tspan fill="#FF5500">midia</tspan>
+                        </text>
+                    </svg>
+                    <!-- Imagem customizada do logo (carregada se logo.png ou logo.svg estiver na pasta) -->
+                    <img id="custom-logo-img" src="logo.png" onerror="this.style.display='none'; document.getElementById('default-logo-svg').style.display='block';" onload="this.style.display='block'; document.getElementById('default-logo-svg').style.display='none';" class="h-8 w-auto hidden" alt="Eletromidia">
+                </a>
+                <div class="hidden sm:block h-6 w-px bg-zinc-800"></div>
+                <div class="hidden sm:block">
+                    <h1 class="font-bold text-sm text-zinc-200 leading-tight">Agenda Auditório</h1>
+                    <p class="text-[11px] text-orange-500 font-semibold">Portal de Agendamento</p>
+                </div>
+            </div>
+
+            <!-- Navegação Pública (Colaboradores) -->
+            <nav class="hidden md:flex items-center space-x-1">
+                <button onclick="switchTab('calendar')" id="nav-calendar" class="px-4 py-2 rounded-lg text-sm font-semibold transition-all flex items-center space-x-2 bg-zinc-900 text-orange-500 border border-orange-500/30">
+                    <i data-lucide="calendar" class="w-4 h-4"></i>
+                    <span>Calendário do Auditório</span>
+                </button>
+                <button onclick="switchTab('new-event')" id="nav-new-event" class="px-4 py-2 rounded-lg text-sm font-semibold text-zinc-400 hover:text-white hover:bg-zinc-900 transition-all flex items-center space-x-2">
+                    <i data-lucide="plus-circle" class="w-4 h-4"></i>
+                    <span>Solicitar Reserva</span>
+                </button>
+
+                <!-- Abas Restritas ao Operador/Direção (Escondidas para colaboradores comuns) -->
+                <button onclick="handleRestrictedTab('fichas')" id="nav-fichas" class="hidden px-4 py-2 rounded-lg text-sm font-semibold text-zinc-400 hover:text-white hover:bg-zinc-900 transition-all flex items-center space-x-2">
+                    <i data-lucide="file-text" class="w-4 h-4 text-pink-400"></i>
+                    <span>Fichas Técnicas (C.O. & AV)</span>
+                </button>
+                <button onclick="handleRestrictedTab('google-settings')" id="nav-google-settings" class="hidden px-4 py-2 rounded-lg text-sm font-semibold text-zinc-400 hover:text-white hover:bg-zinc-900 transition-all flex items-center space-x-2">
+                    <i data-lucide="share-2" class="w-4 h-4 text-blue-400"></i>
+                    <span>Google Agenda</span>
+                </button>
+            </nav>
+
+            <div class="flex items-center space-x-3">
+                <!-- Botão de Reserva Rápida -->
+                <button onclick="openNewEventModal()" class="bg-gradient-to-r from-orange-600 to-amber-500 hover:from-orange-500 hover:to-amber-400 text-black font-black px-4 py-2 rounded-lg text-sm shadow-lg shadow-orange-600/20 transition-all flex items-center space-x-2 active:scale-95">
+                    <i data-lucide="plus" class="w-4 h-4 stroke-[3]"></i>
+                    <span>Reservar Auditório</span>
+                </button>
+
+                <!-- Botão Área Restrita / Login Admin -->
+                <div id="operator-auth-container">
+                    <button id="btn-operator-login" onclick="openOperatorLoginModal()" class="bg-zinc-900 hover:bg-zinc-800 text-zinc-300 border border-zinc-800 text-xs font-bold px-3 py-2 rounded-lg flex items-center space-x-1.5 transition-colors">
+                        <i data-lucide="lock" class="w-3.5 h-3.5 text-orange-500"></i>
+                        <span>Área do Operador</span>
+                    </button>
+                    <div id="operator-logged-badge" class="hidden flex items-center space-x-2 bg-orange-500/10 border border-orange-500/30 px-3 py-1.5 rounded-lg text-xs font-bold text-orange-400">
+                        <span class="flex items-center space-x-1">
+                            <i data-lucide="shield-check" class="w-4 h-4 text-orange-500"></i>
+                            <span id="operator-role-title">Diretor / Admin</span>
+                        </span>
+                        <button onclick="operatorLogout()" title="Sair da Área Restrita" class="text-zinc-400 hover:text-white ml-1">
+                            <i data-lucide="log-out" class="w-3.5 h-3.5"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content Container -->
+    <main class="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6">
+
+        <!-- TAB 1: CALENDÁRIO & LISTA DE EVENTOS (PÚBLICO) -->
+        <section id="tab-calendar" class="space-y-6">
+            <!-- Filter & Action Controls -->
+            <div class="bg-zinc-950 border border-zinc-800/80 rounded-2xl p-4 flex flex-col md:flex-row items-center justify-between gap-4 shadow-xl">
+                <div class="flex flex-wrap items-center gap-2 w-full md:w-auto">
+                    <span class="text-xs font-bold text-zinc-400 uppercase tracking-wider mr-1">Filtrar:</span>
+                    <button onclick="filterEvents('all')" id="filter-all" class="px-3.5 py-1.5 rounded-lg text-xs font-bold bg-orange-500 text-black shadow-md shadow-orange-500/20">Todos</button>
+                    <button onclick="filterEvents('co')" id="filter-co" class="px-3.5 py-1.5 rounded-lg text-xs font-bold bg-zinc-900 text-pink-400 border border-pink-500/30 hover:bg-zinc-800">Com Mídia C.O.</button>
+                    <button onclick="filterEvents('client')" id="filter-client" class="px-3.5 py-1.5 rounded-lg text-xs font-bold bg-zinc-900 text-blue-400 border border-blue-500/30 hover:bg-zinc-800">Cliente Específico</button>
+                    <button onclick="filterEvents('today')" id="filter-today" class="px-3.5 py-1.5 rounded-lg text-xs font-bold bg-zinc-900 text-emerald-400 border border-emerald-500/30 hover:bg-zinc-800">Hoje</button>
+                </div>
+                
+                <div class="flex items-center space-x-3 w-full md:w-auto justify-end">
+                    <div class="relative flex-1 md:w-64">
+                        <i data-lucide="search" class="w-4 h-4 absolute left-3 top-2.5 text-zinc-500"></i>
+                        <input type="text" id="search-input" oninput="handleSearch()" placeholder="Buscar evento, cliente..." class="w-full bg-black border border-zinc-800 text-xs text-white rounded-lg pl-9 pr-3 py-2 focus:outline-none focus:border-orange-500 transition-colors">
+                    </div>
+                    <div class="inline-flex rounded-lg border border-zinc-800 bg-black p-1 text-xs">
+                        <button onclick="setViewMode('cards')" id="view-cards-btn" class="px-3 py-1 rounded-md bg-zinc-800 text-white font-bold">Lista</button>
+                        <button onclick="setViewMode('grid')" id="view-grid-btn" class="px-3 py-1 rounded-md text-zinc-400 hover:text-white font-bold">Grid Mês</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Cards View -->
+            <div id="events-cards-view" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                <!-- Dynamically populated by JS -->
+            </div>
+
+            <!-- Grid Calendar View -->
+            <div id="events-grid-view" class="hidden bg-zinc-950 border border-zinc-800/80 rounded-2xl p-6 shadow-xl">
+                <div class="flex items-center justify-between mb-4">
+                    <h2 id="calendar-month-year" class="text-lg font-extrabold text-white capitalize">Agosto 2026</h2>
+                    <div class="flex space-x-2">
+                        <button onclick="prevMonth()" class="p-2 rounded-lg bg-zinc-900 border border-zinc-800 hover:bg-zinc-800 text-zinc-300"><i data-lucide="chevron-left" class="w-4 h-4"></i></button>
+                        <button onclick="currentMonth()" class="px-3 py-1.5 rounded-lg bg-zinc-900 border border-orange-500/30 text-xs font-bold text-orange-500">Hoje</button>
+                        <button onclick="nextMonth()" class="p-2 rounded-lg bg-zinc-900 border border-zinc-800 hover:bg-zinc-800 text-zinc-300"><i data-lucide="chevron-right" class="w-4 h-4"></i></button>
+                    </div>
+                </div>
+                <div class="grid grid-cols-7 gap-1 text-center font-bold text-xs text-zinc-500 mb-2">
+                    <div>Dom</div><div>Seg</div><div>Ter</div><div>Qua</div><div>Qui</div><div>Sex</div><div>Sáb</div>
+                </div>
+                <div id="calendar-days-grid" class="grid grid-cols-7 gap-1">
+                    <!-- Days generated by JS -->
+                </div>
+            </div>
+        </section>
+
+        <!-- TAB 2: FORMULÁRIO COMPLETO DE NOVO AGENDAMENTO (PÚBLICO PARA COLABORADORES) -->
+        <section id="tab-new-event" class="hidden space-y-6">
+            <div class="bg-zinc-950 border border-zinc-800/80 rounded-2xl p-6 sm:p-8 shadow-2xl max-w-4xl mx-auto">
+                <div class="border-b border-zinc-800 pb-4 mb-6 flex items-center justify-between">
+                    <div>
+                        <h2 class="text-xl font-extrabold text-white">Solicitação de Reserva do Auditório</h2>
+                        <p class="text-xs text-zinc-400 mt-1">Preencha os dados e os questionários de Mídia (C.O.) e Equipamentos (AV).</p>
+                    </div>
+                    <span class="text-xs font-bold px-3 py-1 rounded-full bg-orange-500/10 text-orange-400 border border-orange-500/30">Formulário Oficial</span>
+                </div>
+
+                <!-- Form Steps Indicator -->
+                <div class="grid grid-cols-4 gap-2 mb-8 text-center text-xs font-bold">
+                    <div id="step-indicator-1" class="py-2.5 px-1 border-b-2 border-orange-500 text-orange-400">1. Dados do Evento</div>
+                    <div id="step-indicator-2" class="py-2.5 px-1 border-b-2 border-zinc-800 text-zinc-600">2. Mídia & C.O.</div>
+                    <div id="step-indicator-3" class="py-2.5 px-1 border-b-2 border-zinc-800 text-zinc-600">3. AV & Palco</div>
+                    <div id="step-indicator-4" class="py-2.5 px-1 border-b-2 border-zinc-800 text-zinc-600">4. Logística & Extras</div>
+                </div>
+
+                <form id="booking-form" novalidate onsubmit="handleFormSubmit(event)" class="space-y-6">
+                    
+                    <!-- STEP 1: DADOS DO EVENTO -->
+                    <div id="form-step-1" class="space-y-4">
+                        <h3 class="text-sm font-bold uppercase tracking-wider text-orange-500 flex items-center space-x-2">
+                            <i data-lucide="info" class="w-4 h-4"></i>
+                            <span>Informações Gerais do Evento</span>
+                        </h3>
+
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div class="md:col-span-2">
+                                <label class="block text-xs font-bold text-zinc-300 mb-1">Nome do Evento / Reunião *</label>
+                                <input type="text" id="event_title" placeholder="Ex: Convenção de Vendas Eletromidia" class="w-full bg-black border border-zinc-800 text-sm rounded-xl px-3.5 py-2.5 text-white focus:border-orange-500 focus:outline-none transition-colors">
+                            </div>
+
+                            <div>
+                                <label class="block text-xs font-bold text-zinc-300 mb-1">Nome do Solicitante *</label>
+                                <input type="text" id="applicant_name" placeholder="Seu nome completo" class="w-full bg-black border border-zinc-800 text-sm rounded-xl px-3.5 py-2.5 text-white focus:border-orange-500 focus:outline-none transition-colors">
+                            </div>
+
+                            <div>
+                                <label class="block text-xs font-bold text-zinc-300 mb-1">E-mail Corporativo *</label>
+                                <input type="email" id="applicant_email" placeholder="seu.email@eletromidia.com.br" class="w-full bg-black border border-zinc-800 text-sm rounded-xl px-3.5 py-2.5 text-white focus:border-orange-500 focus:outline-none transition-colors">
+                            </div>
+
+                            <div>
+                                <label class="block text-xs font-bold text-zinc-300 mb-1">Área / Departamento *</label>
+                                <select id="department" class="w-full bg-black border border-zinc-800 text-sm rounded-xl px-3.5 py-2.5 text-white focus:border-orange-500 focus:outline-none transition-colors">
+                                    <option value="">Selecione...</option>
+                                    <option value="Comercial">Comercial</option>
+                                    <option value="Marketing & Produto">Marketing & Produto</option>
+                                    <option value="Recursos Humanos / Gente & Gestão">Recursos Humanos / Gente & Gestão</option>
+                                    <option value="Operações / C.O.">Operações / C.O.</option>
+                                    <option value="Tecnologia & TI">Tecnologia & TI</option>
+                                    <option value="Diretoria / Executivo">Diretoria / Executivo</option>
+                                    <option value="Outro">Outro</option>
+                                </select>
+                            </div>
+
+                            <div>
+                                <label class="block text-xs font-bold text-zinc-300 mb-1">Telefone / Ramal de Contato</label>
+                                <input type="text" id="applicant_phone" placeholder="(11) 99999-9999" class="w-full bg-black border border-zinc-800 text-sm rounded-xl px-3.5 py-2.5 text-white focus:border-orange-500 focus:outline-none transition-colors">
+                            </div>
+
+                            <div>
+                                <label class="block text-xs font-bold text-zinc-300 mb-1">Data do Evento *</label>
+                                <input type="date" id="event_date" class="w-full bg-black border border-zinc-800 text-sm rounded-xl px-3.5 py-2.5 text-white focus:border-orange-500 focus:outline-none transition-colors">
+                            </div>
+
+                            <div>
+                                <label class="block text-xs font-bold text-zinc-300 mb-1">Horário de Início *</label>
+                                <input type="time" id="start_time" class="w-full bg-black border border-zinc-800 text-sm rounded-xl px-3.5 py-2.5 text-white focus:border-orange-500 focus:outline-none transition-colors">
+                            </div>
+
+                            <div>
+                                <label class="block text-xs font-bold text-zinc-300 mb-1">Horário de Término *</label>
+                                <input type="time" id="end_time" class="w-full bg-black border border-zinc-800 text-sm rounded-xl px-3.5 py-2.5 text-white focus:border-orange-500 focus:outline-none transition-colors">
+                            </div>
+
+                            <div>
+                                <label class="block text-xs font-bold text-zinc-300 mb-1">Tempo de Setup Pré-evento</label>
+                                <select id="setup_buffer" class="w-full bg-black border border-zinc-800 text-sm rounded-xl px-3.5 py-2.5 text-white focus:border-orange-500 focus:outline-none transition-colors">
+                                    <option value="15 min">15 minutos antes</option>
+                                    <option value="30 min" selected>30 minutos antes (Recomendado)</option>
+                                    <option value="60 min">1 hora antes</option>
+                                    <option value="120 min">2 horas antes (Eventos grandes)</option>
+                                </select>
+                            </div>
+
+                            <div class="md:col-span-2">
+                                <label class="block text-xs font-bold text-zinc-300 mb-2">Tipo de Evento</label>
+                                <div class="grid grid-cols-2 sm:grid-cols-3 gap-2.5 text-xs font-medium">
+                                    <label class="flex items-center space-x-2 bg-black p-3 rounded-xl border border-zinc-800 cursor-pointer hover:border-orange-500 transition-colors">
+                                        <input type="radio" name="event_type" value="Interno" checked class="text-orange-500 focus:ring-orange-500">
+                                        <span>Interno (Equipe)</span>
+                                    </label>
+                                    <label class="flex items-center space-x-2 bg-black p-3 rounded-xl border border-zinc-800 cursor-pointer hover:border-orange-500 transition-colors">
+                                        <input type="radio" name="event_type" value="Cliente Externo" class="text-orange-500 focus:ring-orange-500">
+                                        <span>Cliente Externo</span>
+                                    </label>
+                                    <label class="flex items-center space-x-2 bg-black p-3 rounded-xl border border-zinc-800 cursor-pointer hover:border-orange-500 transition-colors">
+                                        <input type="radio" name="event_type" value="Townhall / Geral" class="text-orange-500 focus:ring-orange-500">
+                                        <span>Townhall / Empresa</span>
+                                    </label>
+                                    <label class="flex items-center space-x-2 bg-black p-3 rounded-xl border border-zinc-800 cursor-pointer hover:border-orange-500 transition-colors">
+                                        <input type="radio" name="event_type" value="Treinamento" class="text-orange-500 focus:ring-orange-500">
+                                        <span>Treinamento / Workshop</span>
+                                    </label>
+                                    <label class="flex items-center space-x-2 bg-black p-3 rounded-xl border border-zinc-800 cursor-pointer hover:border-orange-500 transition-colors">
+                                        <input type="radio" name="event_type" value="Gravação / Live" class="text-orange-500 focus:ring-orange-500">
+                                        <span>Gravação ou Live</span>
+                                    </label>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="flex justify-end pt-4">
+                            <button type="button" onclick="goToStep(2)" class="bg-gradient-to-r from-orange-600 to-amber-500 hover:from-orange-500 hover:to-amber-400 text-black font-black px-6 py-2.5 rounded-xl text-sm transition-all shadow-md">Próximo: Mídia & C.O. &rarr;</button>
+                        </div>
+                    </div>
+
+                    <!-- STEP 2: QUESTIONÁRIO DE MÍDIA & C.O. -->
+                    <div id="form-step-2" class="hidden space-y-4">
+                        <h3 class="text-sm font-bold uppercase tracking-wider text-pink-400 flex items-center space-x-2">
+                            <i data-lucide="tv" class="w-4 h-4"></i>
+                            <span>Questionário de Mídia & C.O. (Centro de Operações)</span>
+                        </h3>
+
+                        <div class="space-y-4 bg-black p-5 rounded-2xl border border-pink-500/30 shadow-inner">
+                            <!-- Cliente Específico -->
+                            <div class="space-y-2">
+                                <label class="flex items-center space-x-2 text-sm font-bold text-white cursor-pointer">
+                                    <input type="checkbox" id="has_specific_client" onchange="toggleClientInput()" class="w-4 h-4 rounded text-pink-500 focus:ring-pink-400">
+                                    <span>É um evento para um cliente específico?</span>
+                                </label>
+                                <div id="client_name_container" class="hidden pl-6">
+                                    <label class="block text-xs font-bold text-zinc-400 mb-1">Nome do Cliente / Marca</label>
+                                    <input type="text" id="client_name" placeholder="Ex: Itaú, Ambev, Samsung..." class="w-full bg-zinc-900 border border-zinc-800 text-sm rounded-xl px-3.5 py-2.5 text-white focus:border-pink-500 focus:outline-none">
+                                </div>
+                            </div>
+
+                            <hr class="border-zinc-800">
+
+                            <!-- Exibição de Artes pelo C.O. -->
+                            <div class="space-y-2">
+                                <label class="flex items-center space-x-2 text-sm font-bold text-white cursor-pointer">
+                                    <input type="checkbox" id="has_co_media" onchange="toggleCOMediaOptions()" class="w-4 h-4 rounded text-pink-500 focus:ring-pink-400">
+                                    <span>Necessita de exibição de vinhetas ou artes específicas configuradas pelo C.O.?</span>
+                                </label>
+                                
+                                <div id="co_media_options" class="hidden pl-6 space-y-4 pt-2">
+                                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                        <div>
+                                            <label class="block text-xs font-bold text-zinc-400 mb-1">Tipo de Mídia para Exibição</label>
+                                            <select id="co_media_type" class="w-full bg-zinc-900 border border-zinc-800 text-sm rounded-xl px-3.5 py-2.5 text-white focus:border-pink-500 focus:outline-none">
+                                                <option value="Vídeo em Loop no Videowall">Vídeo em Loop no Videowall</option>
+                                                <option value="Vinheta de Abertura / Encerramento">Vinheta de Abertura / Encerramento</option>
+                                                <option value="Imagem Estática de Boas-Vindas">Imagem Estática de Boas-Vindas</option>
+                                                <option value="Carrossel de Artes do Cliente">Carrossel de Artes do Cliente</option>
+                                            </select>
+                                        </div>
+
+                                        <div>
+                                            <label class="block text-xs font-bold text-zinc-400 mb-1">Formato / Resolução</label>
+                                            <select id="co_media_format" class="w-full bg-zinc-900 border border-zinc-800 text-sm rounded-xl px-3.5 py-2.5 text-white focus:border-pink-500 focus:outline-none">
+                                                <option value="16:9 Full HD (1920x1080)">16:9 Full HD (1920x1080)</option>
+                                                <option value="16:9 4K (3840x2160)">16:9 4K (3840x2160)</option>
+                                                <option value="Formato Customizado do Videowall">Formato Customizado do Videowall</option>
+                                                <option value="Formato Vertical">Formato Vertical</option>
+                                            </select>
+                                        </div>
+
+                                        <div class="md:col-span-2">
+                                            <label class="block text-xs font-bold text-zinc-400 mb-1">Link para Download dos Arquivos (Drive/OneDrive/WeTransfer)</label>
+                                            <input type="url" id="co_media_url" placeholder="https://drive.google.com/..." class="w-full bg-zinc-900 border border-zinc-800 text-sm rounded-xl px-3.5 py-2.5 text-white focus:border-pink-500 focus:outline-none">
+                                        </div>
+
+                                        <div>
+                                            <label class="block text-xs font-bold text-zinc-400 mb-1">Solicita Teste Prévio com o C.O.?</label>
+                                            <div class="flex items-center space-x-4 text-xs font-bold pt-1">
+                                                <label class="flex items-center space-x-1 cursor-pointer"><input type="radio" name="co_test_needed" value="Sim" class="text-pink-500"> <span>Sim</span></label>
+                                                <label class="flex items-center space-x-1 cursor-pointer"><input type="radio" name="co_test_needed" value="Não" checked class="text-pink-500"> <span>Não</span></label>
+                                            </div>
+                                        </div>
+
+                                        <div>
+                                            <label class="block text-xs font-bold text-zinc-400 mb-1">Data/Hora Sugerida para Teste C.O.</label>
+                                            <input type="datetime-local" id="co_test_datetime" class="w-full bg-zinc-900 border border-zinc-800 text-sm rounded-xl px-3.5 py-2.5 text-white focus:border-pink-500 focus:outline-none">
+                                        </div>
+
+                                        <div class="md:col-span-2">
+                                            <label class="block text-xs font-bold text-zinc-400 mb-1">Instruções de Troca de Mídia para o Operador do C.O.</label>
+                                            <textarea id="co_instructions" rows="2" placeholder="Ex: Deixar vinheta em loop até as 10h. Quando o palestrante subir, trocar para logo do cliente..." class="w-full bg-zinc-900 border border-zinc-800 text-sm rounded-xl px-3.5 py-2.5 text-white focus:border-pink-500 focus:outline-none"></textarea>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="flex justify-between pt-4">
+                            <button type="button" onclick="goToStep(1)" class="bg-zinc-800 text-zinc-300 font-bold px-6 py-2.5 rounded-xl text-sm hover:bg-zinc-700 transition-colors">&larr; Voltar</button>
+                            <button type="button" onclick="goToStep(3)" class="bg-gradient-to-r from-orange-600 to-amber-500 hover:from-orange-500 hover:to-amber-400 text-black font-black px-6 py-2.5 rounded-xl text-sm transition-all shadow-md">Próximo: AV & Palco &rarr;</button>
+                        </div>
+                    </div>
+
+                    <!-- STEP 3: QUESTIONÁRIO TÉCNICO DE APRESENTAÇÃO & AV -->
+                    <div id="form-step-3" class="hidden space-y-4">
+                        <h3 class="text-sm font-bold uppercase tracking-wider text-cyan-400 flex items-center space-x-2">
+                            <i data-lucide="mic" class="w-4 h-4"></i>
+                            <span>Questionário Técnico de Apresentação & Palco (TI/AV)</span>
+                        </h3>
+
+                        <div class="space-y-4 bg-black p-5 rounded-2xl border border-cyan-500/30 shadow-inner">
+                            <!-- Apresentações de Slides -->
+                            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                                <div>
+                                    <label class="block text-xs font-bold text-zinc-300 mb-1">Quantidade de Apresentações</label>
+                                    <input type="number" id="num_presentations" min="0" value="1" class="w-full bg-zinc-900 border border-zinc-800 text-sm rounded-xl px-3.5 py-2.5 text-white focus:border-cyan-500 focus:outline-none">
+                                </div>
+
+                                <div>
+                                    <label class="block text-xs font-bold text-zinc-300 mb-1">Formato do Arquivo</label>
+                                    <select id="presentation_format" class="w-full bg-zinc-900 border border-zinc-800 text-sm rounded-xl px-3.5 py-2.5 text-white focus:border-cyan-500 focus:outline-none">
+                                        <option value="PowerPoint (.pptx)">PowerPoint (.pptx)</option>
+                                        <option value="PDF">PDF</option>
+                                        <option value="Keynote (Mac)">Keynote (Mac)</option>
+                                        <option value="Canva / Web Link">Canva / Link Web</option>
+                                    </select>
+                                </div>
+
+                                <div>
+                                    <label class="block text-xs font-bold text-zinc-300 mb-1">Notebook Utilizado</label>
+                                    <select id="presentation_device" class="w-full bg-zinc-900 border border-zinc-800 text-sm rounded-xl px-3.5 py-2.5 text-white focus:border-cyan-500 focus:outline-none">
+                                        <option value="Notebook do Auditório (Recomendado)">Notebook do Auditório (Recomendado)</option>
+                                        <option value="Notebook Próprio (HDMI)">Notebook Próprio (HDMI)</option>
+                                        <option value="MacBook (Necessita Adaptador)">MacBook (Necessita Adaptador)</option>
+                                    </select>
+                                </div>
+                            </div>
+
+                            <hr class="border-zinc-800">
+
+                            <!-- Apresentadores e Microfones -->
+                            <div>
+                                <h4 class="text-xs font-bold text-zinc-400 uppercase tracking-wider mb-3">Pessoas no Palco & Microfones</h4>
+                                <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+                                    <div>
+                                        <label class="block text-xs font-bold text-zinc-300 mb-1">Nº Apresentadores no Palco</label>
+                                        <input type="number" id="num_presenters" min="1" value="1" class="w-full bg-zinc-900 border border-zinc-800 text-sm rounded-xl px-3.5 py-2.5 text-white focus:border-cyan-500 focus:outline-none">
+                                    </div>
+
+                                    <div>
+                                        <label class="block text-xs font-bold text-zinc-300 mb-1">Microfones Mão Sem Fio</label>
+                                        <input type="number" id="mics_handheld" min="0" value="2" class="w-full bg-zinc-900 border border-zinc-800 text-sm rounded-xl px-3.5 py-2.5 text-white focus:border-cyan-500 focus:outline-none">
+                                    </div>
+
+                                    <div>
+                                        <label class="block text-xs font-bold text-zinc-300 mb-1">Microfones Lapela/Headset</label>
+                                        <input type="number" id="mics_lapel" min="0" value="0" class="w-full bg-zinc-900 border border-zinc-800 text-sm rounded-xl px-3.5 py-2.5 text-white focus:border-cyan-500 focus:outline-none">
+                                    </div>
+
+                                    <div>
+                                        <label class="block text-xs font-bold text-zinc-300 mb-1">Microfones Plateia (Q&A)</label>
+                                        <input type="number" id="mics_audience" min="0" value="1" class="w-full bg-zinc-900 border border-zinc-800 text-sm rounded-xl px-3.5 py-2.5 text-white focus:border-cyan-500 focus:outline-none">
+                                    </div>
+                                </div>
+                            </div>
+
+                            <hr class="border-zinc-800">
+
+                            <!-- Layout do Palco & Acessórios -->
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <div>
+                                    <label class="block text-xs font-bold text-zinc-300 mb-1">Configuração do Palco</label>
+                                    <select id="stage_layout" class="w-full bg-zinc-900 border border-zinc-800 text-sm rounded-xl px-3.5 py-2.5 text-white focus:border-cyan-500 focus:outline-none">
+                                        <option value="Púlpito de Apresentação">Púlpito de Apresentação</option>
+                                        <option value="Poltronas / Lounge de Bate-Papo">Poltronas / Lounge de Bate-Papo</option>
+                                        <option value="Mesa para Painel de Debates">Mesa para Painel de Debates</option>
+                                        <option value="Espaço Livre (Stand-up / Performance)">Espaço Livre (Stand-up / Performance)</option>
+                                    </select>
+                                </div>
+
+                                <div>
+                                    <label class="block text-xs font-bold text-zinc-300 mb-1">Transmissão / Evento Híbrido</label>
+                                    <select id="streaming_type" class="w-full bg-zinc-900 border border-zinc-800 text-sm rounded-xl px-3.5 py-2.5 text-white focus:border-cyan-500 focus:outline-none">
+                                        <option value="Sem Transmissão (Presencial Apenas)">Sem Transmissão (Presencial Apenas)</option>
+                                        <option value="Microsoft Teams">Microsoft Teams</option>
+                                        <option value="Zoom Meeting/Webinar">Zoom Meeting/Webinar</option>
+                                        <option value="YouTube Live / Gravação">YouTube Live / Gravação</option>
+                                    </select>
+                                </div>
+
+                                <div class="md:col-span-2 flex flex-wrap gap-4 text-xs font-medium pt-2">
+                                    <label class="flex items-center space-x-2 cursor-pointer">
+                                        <input type="checkbox" id="need_passador" checked class="w-4 h-4 rounded text-cyan-500 focus:ring-cyan-400">
+                                        <span>Passador de Slides (Laser Pointer)</span>
+                                    </label>
+
+                                    <label class="flex items-center space-x-2 cursor-pointer">
+                                        <input type="checkbox" id="need_stage_monitor" checked class="w-4 h-4 rounded text-cyan-500 focus:ring-cyan-400">
+                                        <span>Monitor de Retorno no Palco</span>
+                                    </label>
+
+                                    <label class="flex items-center space-x-2 cursor-pointer">
+                                        <input type="checkbox" id="need_ti_support" checked class="w-4 h-4 rounded text-cyan-500 focus:ring-cyan-400">
+                                        <span>Técnico de TI Acompanhando no Local</span>
+                                    </label>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="flex justify-between pt-4">
+                            <button type="button" onclick="goToStep(2)" class="bg-zinc-800 text-zinc-300 font-bold px-6 py-2.5 rounded-xl text-sm hover:bg-zinc-700 transition-colors">&larr; Voltar</button>
+                            <button type="button" onclick="goToStep(4)" class="bg-gradient-to-r from-orange-600 to-amber-500 hover:from-orange-500 hover:to-amber-400 text-black font-black px-6 py-2.5 rounded-xl text-sm transition-all shadow-md">Próximo: Logística &rarr;</button>
+                        </div>
+                    </div>
+
+                    <!-- STEP 4: LOGÍSTICA & EXTRAS -->
+                    <div id="form-step-4" class="hidden space-y-4">
+                        <h3 class="text-sm font-bold uppercase tracking-wider text-emerald-400 flex items-center space-x-2">
+                            <i data-lucide="coffee" class="w-4 h-4"></i>
+                            <span>Logística, Portaria & Catering</span>
+                        </h3>
+
+                        <div class="space-y-4 bg-black p-5 rounded-2xl border border-emerald-500/30 shadow-inner">
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <div>
+                                    <label class="block text-xs font-bold text-zinc-300 mb-1">Nº Estimado de Participantes</label>
+                                    <input type="number" id="num_attendees" min="1" value="30" class="w-full bg-zinc-900 border border-zinc-800 text-sm rounded-xl px-3.5 py-2.5 text-white focus:border-emerald-500 focus:outline-none">
+                                </div>
+
+                                <div>
+                                    <label class="block text-xs font-bold text-zinc-300 mb-1">Nº de Visitantes Externos</label>
+                                    <input type="number" id="num_external_guests" min="0" value="0" class="w-full bg-zinc-900 border border-zinc-800 text-sm rounded-xl px-3.5 py-2.5 text-white focus:border-emerald-500 focus:outline-none">
+                                </div>
+
+                                <div>
+                                    <label class="block text-xs font-bold text-zinc-300 mb-1">Haverá Coffee Break / Alimentação?</label>
+                                    <select id="has_catering" onchange="toggleCateringDetails()" class="w-full bg-zinc-900 border border-zinc-800 text-sm rounded-xl px-3.5 py-2.5 text-white focus:border-emerald-500 focus:outline-none">
+                                        <option value="Não">Não</option>
+                                        <option value="Sim (No Foyer do Auditório)">Sim (No Foyer do Auditório)</option>
+                                        <option value="Sim (Na Sala de Apoio)">Sim (Na Sala de Apoio)</option>
+                                    </select>
+                                </div>
+
+                                <div id="catering_time_container" class="hidden">
+                                    <label class="block text-xs font-bold text-zinc-300 mb-1">Horário do Coffee Break</label>
+                                    <input type="time" id="catering_time" class="w-full bg-zinc-900 border border-zinc-800 text-sm rounded-xl px-3.5 py-2.5 text-white focus:border-emerald-500 focus:outline-none">
+                                </div>
+
+                                <div class="md:col-span-2">
+                                    <label class="block text-xs font-bold text-zinc-300 mb-1">Observações Adicionais para Recepção ou Limpeza</label>
+                                    <textarea id="logistics_notes" rows="2" placeholder="Ex: Necessidade de crachás temporários para convidados da agência X..." class="w-full bg-zinc-900 border border-zinc-800 text-sm rounded-xl px-3.5 py-2.5 text-white focus:border-emerald-500 focus:outline-none"></textarea>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Sync with Google Calendar Banner -->
+                        <div class="bg-gradient-to-r from-orange-950/40 via-amber-950/40 to-zinc-900 border border-orange-500/30 p-4 rounded-2xl flex items-center justify-between">
+                            <div class="flex items-center space-x-3">
+                                <div class="bg-orange-600 p-2.5 rounded-xl text-black font-black shadow-lg">
+                                    <i data-lucide="calendar-plus" class="w-5 h-5"></i>
+                                </div>
+                                <div>
+                                    <h4 class="text-xs font-bold text-orange-400">Sincronização com Google Agenda Pronta</h4>
+                                    <p class="text-[11px] text-zinc-400">Após concluir, você poderá adicionar o agendamento ao Google Agenda com 1-clique.</p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="flex justify-between pt-4">
+                            <button type="button" onclick="goToStep(3)" class="bg-zinc-800 text-zinc-300 font-bold px-6 py-2.5 rounded-xl text-sm hover:bg-zinc-700 transition-colors">&larr; Voltar</button>
+                            <button type="submit" class="bg-gradient-to-r from-orange-600 via-amber-500 to-orange-500 hover:from-orange-500 hover:to-amber-400 text-black font-black px-8 py-3 rounded-xl text-sm shadow-xl shadow-orange-600/30 transform transition active:scale-95 flex items-center space-x-2">
+                                <i data-lucide="check-circle" class="w-4 h-4 stroke-[3]"></i>
+                                <span>Concluir Agendamento</span>
+                            </button>
+                        </div>
+                    </div>
+
+                </form>
+            </div>
+        </section>
+
+        <!-- TAB 3: FICHAS TÉCNICAS (ÁREA RESTRITA AO OPERADOR C.O. & TI / DIREÇÃO) -->
+        <section id="tab-fichas" class="hidden space-y-6">
+            <div class="bg-zinc-950 border border-zinc-800/80 rounded-2xl p-6 sm:p-8 shadow-2xl">
+                <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
+                    <div>
+                        <div class="flex items-center space-x-2 mb-1">
+                            <span class="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-pink-500/10 text-pink-400 border border-pink-500/20">Área do Operador & Gestão</span>
+                        </div>
+                        <h2 class="text-xl font-extrabold text-white">Fichas Técnicas & Operação C.O. / TI</h2>
+                        <p class="text-xs text-zinc-400 mt-1">Visão completa dos requisitos técnicos e mídias de cada evento agendado.</p>
+                    </div>
+                    <div class="flex items-center space-x-2">
+                        <button onclick="exportAllFichasPDF()" class="bg-zinc-900 hover:bg-zinc-800 text-zinc-200 border border-zinc-700 text-xs px-4 py-2.5 rounded-xl flex items-center space-x-2 font-bold transition-all">
+                            <i data-lucide="printer" class="w-4 h-4 text-orange-500"></i>
+                            <span>Imprimir Relatório Geral</span>
+                        </button>
+                    </div>
+                </div>
+
+                <div id="fichas-container" class="space-y-6">
+                    <!-- Dynamically generated Fichas Técnicas -->
+                </div>
+            </div>
+        </section>
+
+        <!-- TAB 4: CONFIGURAÇÃO DO GOOGLE AGENDA (ÁREA RESTRITA) -->
+        <section id="tab-google-settings" class="hidden space-y-6">
+            <div class="bg-zinc-950 border border-zinc-800/80 rounded-2xl p-6 sm:p-8 max-w-3xl mx-auto space-y-6 shadow-2xl">
+                <div class="border-b border-zinc-800 pb-4">
+                    <div class="flex items-center space-x-2 mb-1">
+                        <span class="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-blue-500/10 text-blue-400 border border-blue-500/20">Área de Administração</span>
+                    </div>
+                    <h2 class="text-xl font-extrabold text-white flex items-center space-x-2">
+                        <i data-lucide="share-2" class="w-5 h-5 text-orange-500"></i>
+                        <span>Integração com Google Agenda</span>
+                    </h2>
+                    <p class="text-xs text-zinc-400 mt-1">Conecte o sistema do auditório à agenda corporativa oficial da Eletromidia.</p>
+                </div>
+
+                <!-- Feature 1: Botão Direto -->
+                <div class="bg-black p-5 rounded-2xl border border-zinc-800 space-y-2">
+                    <div class="flex items-center space-x-2 text-orange-500 font-bold text-sm">
+                        <i data-lucide="link" class="w-4 h-4"></i>
+                        <span>1. Link Direto & Botão "Adicionar ao Google Agenda"</span>
+                    </div>
+                    <p class="text-xs text-zinc-300 leading-relaxed">
+                        Qualquer agendamento realizado no sistema gera instantaneamente um botão personalizado que abre a tela de criação do Google Agenda do usuário com todos os campos (título, horário, sala e ficha técnica) preenchidos automaticamente.
+                    </p>
+                    <span class="inline-block px-2.5 py-1 rounded-md bg-emerald-500/10 text-emerald-400 text-[10px] font-bold border border-emerald-500/20">Status: Ativo e Funcional</span>
+                </div>
+
+                <!-- Feature 2: Feed iCal / Subscrição -->
+                <div class="bg-black p-5 rounded-2xl border border-zinc-800 space-y-2">
+                    <div class="flex items-center space-x-2 text-amber-400 font-bold text-sm">
+                        <i data-lucide="rss" class="w-4 h-4"></i>
+                        <span>2. Feed de Assinatura iCal / .ics</span>
+                    </div>
+                    <p class="text-xs text-zinc-300 leading-relaxed">
+                        Permite que os operadores do C.O. e TI assinem a agenda do auditório no Google Agenda pelo link WebCal, sincronizando todos os compromissos em tempo real.
+                    </p>
+                    <div class="flex items-center space-x-2 pt-1">
+                        <input type="text" readonly value="webcal://eletromidia.com.br/api/auditorio/ical.ics" class="flex-1 bg-zinc-900 border border-zinc-800 text-xs px-3.5 py-2 rounded-xl text-zinc-400">
+                        <button onclick="copyWebCalLink()" class="bg-zinc-800 hover:bg-zinc-700 text-xs px-4 py-2 rounded-xl text-white font-bold transition-colors">Copiar Link</button>
+                    </div>
+                </div>
+
+                <!-- Feature 3: Configuração da API Oficial -->
+                <div class="bg-black p-5 rounded-2xl border border-zinc-800 space-y-4">
+                    <div class="flex items-center justify-between">
+                        <div class="flex items-center space-x-2 text-pink-400 font-bold text-sm">
+                            <i data-lucide="key" class="w-4 h-4"></i>
+                            <span>3. Sincronização Automática via Google Calendar API (OAuth2)</span>
+                        </div>
+                    </div>
+                    <p class="text-xs text-zinc-300 leading-relaxed">
+                        Para sincronizar eventos diretamente com a conta institucional (ex: <code class="bg-zinc-900 px-1.5 py-0.5 rounded text-orange-400 font-mono">auditorio@eletromidia.com.br</code>) sem interação manual do usuário, insira as credenciais do projeto Google Cloud.
+                    </p>
+
+                    <div class="grid grid-cols-1 gap-3">
+                        <div>
+                            <label class="block text-xs font-bold text-zinc-400 mb-1">Google Client ID / OAuth Client</label>
+                            <input type="text" id="gcal_client_id" placeholder="1234567890-xxx.apps.googleusercontent.com" class="w-full bg-zinc-900 border border-zinc-800 text-xs rounded-xl px-3.5 py-2 text-white focus:border-orange-500 focus:outline-none">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-bold text-zinc-400 mb-1">ID da Agenda de Destino (Calendar ID)</label>
+                            <input type="text" id="gcal_calendar_id" placeholder="auditorio.sp@eletromidia.com.br" class="w-full bg-zinc-900 border border-zinc-800 text-xs rounded-xl px-3.5 py-2 text-white focus:border-orange-500 focus:outline-none">
+                        </div>
+                    </div>
+
+                    <div class="pt-2 flex justify-end">
+                        <button onclick="saveGoogleConfig()" class="bg-gradient-to-r from-orange-600 to-amber-500 hover:from-orange-500 hover:to-amber-400 text-black font-black text-xs px-5 py-2.5 rounded-xl shadow-md">Salvar Configurações API</button>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+    </main>
+
+    <!-- Modal: Login Área Restrita (Administração / Direção / Operador) -->
+    <div id="operator-login-modal" class="hidden fixed inset-0 z-50 bg-black/90 backdrop-blur-md flex items-center justify-center p-4">
+        <div class="bg-zinc-950 border border-zinc-800 rounded-2xl max-w-md w-full p-6 sm:p-8 shadow-2xl relative">
+            <button onclick="closeOperatorLoginModal()" class="absolute right-4 top-4 p-2 rounded-xl text-zinc-400 hover:text-white hover:bg-zinc-900 transition-colors">
+                <i data-lucide="x" class="w-5 h-5"></i>
+            </button>
+            <div class="space-y-5">
+                <div class="text-center">
+                    <div class="w-12 h-12 bg-orange-500/10 border border-orange-500/30 rounded-2xl text-orange-500 flex items-center justify-center mx-auto mb-3">
+                        <i data-lucide="shield-check" class="w-6 h-6"></i>
+                    </div>
+                    <h3 class="text-lg font-black text-white">Acesso Restrito - Gestão & C.O.</h3>
+                    <p class="text-xs text-zinc-400 mt-1">Insira seu login e senha autorizados para gerenciar o auditório.</p>
+                </div>
+
+                <form onsubmit="handleOperatorLogin(event)" class="space-y-4">
+                    <div>
+                        <label class="block text-xs font-bold text-zinc-300 mb-1">Login / Usuário</label>
+                        <input type="text" id="operator_user" required placeholder="Digite seu login..." class="w-full bg-black border border-zinc-800 text-sm rounded-xl px-3.5 py-2.5 text-white focus:border-orange-500 focus:outline-none">
+                    </div>
+
+                    <div>
+                        <label class="block text-xs font-bold text-zinc-300 mb-1">Senha de Acesso</label>
+                        <input type="password" id="operator_pass" required placeholder="••••••••" class="w-full bg-black border border-zinc-800 text-sm rounded-xl px-3.5 py-2.5 text-white focus:border-orange-500 focus:outline-none">
+                    </div>
+
+                    <button type="submit" class="w-full bg-gradient-to-r from-orange-600 to-amber-500 hover:from-orange-500 hover:to-amber-400 text-black font-black py-3 rounded-xl text-sm shadow-xl transition-all">
+                        Entrar na Área Restrita
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal: Detalhes do Evento & Ficha Técnica -->
+    <div id="event-modal" class="hidden fixed inset-0 z-50 bg-black/85 backdrop-blur-md flex items-center justify-center p-4">
+        <div class="bg-zinc-950 border border-zinc-800/80 rounded-2xl max-w-3xl w-full max-h-[90vh] overflow-y-auto p-6 sm:p-8 shadow-2xl relative">
+            <button onclick="closeEventModal()" class="absolute right-4 top-4 p-2 rounded-xl text-zinc-400 hover:text-white hover:bg-zinc-900 transition-colors">
+                <i data-lucide="x" class="w-5 h-5"></i>
+            </button>
+            <div id="modal-content">
+                <!-- Dynamically filled by JS -->
+            </div>
+        </div>
+    </div>
+
+    <!-- Notification Toast -->
+    <div id="toast" class="fixed bottom-5 right-5 z-50 transform translate-y-20 opacity-0 transition-all duration-300 bg-orange-500 text-black px-5 py-3.5 rounded-xl shadow-2xl font-black text-sm flex items-center space-x-2">
+        <i data-lucide="check-circle-2" class="w-5 h-5"></i>
+        <span id="toast-message">Operação realizada com sucesso!</span>
+    </div>
+
+    <script src="app.js"></script>
+    <script>
+        // Initialize Lucide icons
+        lucide.createIcons();
+    </script>
+</body>
+</html>
